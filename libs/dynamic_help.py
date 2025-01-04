@@ -64,7 +64,7 @@
     [Latest Author]
         o Michael Arroyo
     [Latest Build Version]
-        o 1.0.0.20250102 (Major.Minor.Patch.Date<YYYYMMDD>)
+        o 1.1.0.20250103 (Major.Minor.Patch.Date<YYYYMMDD>)
     [Comments]
         o
     [Python Compatibility / Tested On]
@@ -82,6 +82,9 @@
 .BUILD NOTES
     o 1.0.0.20250102
         [Michael Arroyo] Initial Build
+    o 1.1.0.20250103
+        [Michael Arroyo] Add try catch support for the argparse values.
+            This is to allow a shortened arg list when processing the command after an Import.
 
 .EXAMPLES
     Command: python .\\libs\\dynamic_help.py --version --module .\\libs\\dynamic_help.py
@@ -249,15 +252,51 @@ def main(args):
     This is the main function to parse and display the docstring of a Python module or function
     """
     # Set Variables
-    version_flag = args.version
-    module = args.module
-    full_help_flag = args.full_help
-    examples_flag = args.examples
-    build_notes_flag = args.build_notes
-    dependencies_flag = args.dependencies
-    notes_flag = args.notes
-    sample_docstring_flag = args.sample_docstring
-    return_only_flag = args.return_only
+    try:
+        version_flag = args.version
+    except AttributeError:
+        version_flag = False
+
+    try:
+        module = args.module
+    except AttributeError:
+        module = __file__
+
+    try:
+        full_help_flag = args.full_help
+    except AttributeError:
+        full_help_flag = False
+
+    try:
+        examples_flag = args.examples
+    except AttributeError:
+        examples_flag = True
+
+    try:
+        build_notes_flag = args.build_notes
+    except AttributeError:
+        build_notes_flag = False
+
+    try:
+        dependencies_flag = args.dependencies
+    except AttributeError:
+        dependencies_flag = False
+
+    try:
+        notes_flag = args.notes
+    except AttributeError:
+        notes_flag = False
+
+    try:
+        sample_docstring_flag = args.sample_docstring
+    except AttributeError:
+        sample_docstring_flag = False
+
+    try:
+        return_only_flag = args.return_only
+    except AttributeError:
+        return_only_flag = False
+
     module_path = os.path.realpath(module)
 
     try:
