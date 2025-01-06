@@ -15,5 +15,7 @@ __pycache__/
 *.swm
 *.swl
 *.pyo
+*.pyc
 *.pyd
+*.log
 .venv/

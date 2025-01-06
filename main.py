@@ -94,6 +94,27 @@
     Description: With pytest run the tests in the tests folder with the project_only marker.
     Notes: These tests are developer defined tests.  Not mandatory before pushing to the repository
     Output:
+
+    Command: python .\main.py --list_templates
+    Description: List the available templates in the templates folder
+    Notes:
+    Output:
+
+    Command: python .\\main.py --use_template --path C:\\Source\\scratch\\ --git_init
+    Description: Create a new python folder structure in the specified directory using the default template
+    Notes:  The default template is set in the yaml configuration file.
+            The default configuration file is .\\configs\\default.yaml
+    Output:
+
+    Command: python .\main.py --use_template --template_name cybereng\v1 --path C:\\Source\\scratch\\ --git_init --venv_init
+    Description: Create a new python folder structure in the specified directory using the specified template
+    Notes: The default name of the project is 'project' and the default path is the current directory
+    Output:
+
+    Command: python .\\main.py --path C:\\Source\\Dev\\ --name myproject --config_file .\\SecEng.yaml
+    Description: Specify the configuration file to use for the project creation
+    Notes:
+    Output:
 """
 
 import argparse # This library will provide a way to parse command line arguments
@@ -102,6 +123,9 @@ import subprocess # This library will provide a way to run shell commands
 import sys # This library provides access to some variables used or maintained by the interpreter
 import libs.dynamic_help # This library will provide a way to create dynamic help for the project
 
+from contextlib import redirect_stdout # This library will provide a way to redirect the standard output
+from dirsync import sync # This library will provide a way to sync directories
+from io import StringIO # This library will provide a way to work with string inputs and outputs
 from libs.create_file import create_file # This library will create the files specified in the config.yaml file
 from libs.create_folder import create_folder # This library will create the folders specified in the config.yaml file
 from libs.isNotebook import is_notebook # This library will check if the script is running in a Jupyter notebook
@@ -111,6 +135,34 @@ from libs.set_gitignore import set_gitignore # This library will set the .gitign
 from libs.timestamp import timestamp # This library will provide a timestamp for the logs and output
 from pathlib import Path # This library will provide a way to work with file paths
 from rich import print # This library will provide a way to print rich text to the console
+
+def list_templates(start_dir):
+    '''
+    .DESCRIPTION
+        This function will list the templates in the templates folder
+
+    .PARAMETERS
+        start_dir: str
+    '''
+    template_list = []
+    for root, dirs, files in os.walk(start_dir):
+        # Calculate the depth by counting the slashes in the path
+        relative_path = os.path.relpath(root, start_dir)
+        depth = relative_path.count(os.sep)
+
+        # Only print paths up to 2 levels deep
+        if depth == 1:
+            template_list.append(relative_path)
+            continue
+
+    print("\n[bold yellow] Available templates:[/bold yellow]")
+    print("[bold yellow] ********************[/bold yellow]")
+    if len(template_list) == 0:
+        print('[red][-] No templates found![/red]')
+    else:
+        for template in template_list:
+            print(f'[green][+] {template}[/green]')
+    print("")
 
 def main(current_args):
     '''Main function to create the folder structure'''
@@ -139,16 +191,38 @@ def main(current_args):
     except AttributeError:
         name = 'project'
 
-    parent_dir = os.path.join(path, name)
+    try:
+        config_file = current_args.config_file
+        if config_file is None:
+            raise AttributeError
+    except AttributeError:
+        config_file = Path(__file__).parent / 'configs' / 'default.yaml'
+
+    project_dir = os.path.join(path, name)
     working_dir = Path(__file__).parent
-    config = load_config(working_dir)
-    conda_dir = os.path.join(parent_dir, 'conda')
-    git_ignore_file = os.path.join(parent_dir, '.gitignore')
+    config = load_config(config_file)
+    conda_dir = os.path.join(project_dir, 'conda')
+    git_ignore_file = os.path.join(project_dir, '.gitignore')
+    template_dir = Path(__file__).parent / 'templates'
 
     try:
         python_version = current_args.python
+        if python_version is None:
+            raise AttributeError
     except AttributeError:
         python_version = config['general']['python_version']
+
+    try:
+        template_name = current_args.template_name
+        if template_name is None:
+            raise AttributeError
+    except AttributeError:
+        template_name = os.path.join(template_dir, config['template']['default'])
+
+    try:
+        use_template = current_args.use_template
+    except AttributeError:
+        use_template = False
 
     if conda_init:
         venv_init = False
@@ -156,15 +230,24 @@ def main(current_args):
         conda_init = False
 
     try:
-        os.makedirs(parent_dir)
-        os.chdir(parent_dir)
+        os.makedirs(project_dir)
+        os.chdir(project_dir)
     except FileExistsError:
         print('[red][-] Folder already exists![/red]')
         sys.exit(1)
 
-    create_folder(parent_dir, config['content']['folders'])
-    create_file(parent_dir, config['content']['files'])
-    set_gitignore(git_ignore_file, config['gitignore'])
+    if use_template:
+        try:
+            with StringIO() as f, redirect_stdout(f):
+                sync(template_name, project_dir, 'sync')
+            print('[green][+] Template copied successfully![/green]')
+        except Exception as e:
+            print('[red][-] Error copying template![/red]')
+            print(e)
+    else:
+        create_folder(project_dir, config['content']['folders'])
+        create_file(project_dir, config['content']['files'])
+        set_gitignore(git_ignore_file, config['gitignore'])
 
     if git_init:
         cmd_git_init = 'git init'
@@ -214,7 +297,11 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--path', default='./', help='path to create the folder structure in')
     parser.add_argument('-n', '--name', default='project', help='name of the project')
     parser.add_argument('-py', '--python', help='python version to use in (conda only)')
-    parser.add_argument('-exm', '--examples', action='store_true', help='example of the project to create')
+    parser.add_argument('-ex', '--examples', action='store_true', help='example of the project to create')
+    parser.add_argument('-ut', '--use_template', action='store_true', help='use the template folder for the project')
+    parser.add_argument('-lt', '--list_templates', action='store_true', help='list the available templates')
+    parser.add_argument('-tn', '--template_name', type=str, help='name of the template to use')
+    parser.add_argument('-cf', '--config_file', type=str, help='full path to the config file to use <path>/<file>.yaml')
     args = parser.parse_args()
 
     if args.examples:
@@ -231,6 +318,12 @@ if __name__ == '__main__':
         arg_obj.version = True
 
         libs.dynamic_help.main(arg_obj)
+        sys.exit(0)
+
+    if args.list_templates:
+        working_dir = Path(__file__).parent
+        template_dir = os.path.join(working_dir, 'templates')
+        list_templates(template_dir)
         sys.exit(0)
 
     main(args)
