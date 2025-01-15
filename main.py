@@ -118,6 +118,7 @@
 """
 
 import argparse # This library will provide a way to parse command line arguments
+import marimo as mo # This library will provide a way to create and manage a notebook
 import os # This library provides a way to work with the operating system
 import subprocess # This library will provide a way to run shell commands
 import sys # This library provides access to some variables used or maintained by the interpreter

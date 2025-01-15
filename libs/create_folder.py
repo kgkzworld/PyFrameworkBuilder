@@ -44,7 +44,7 @@ def create_folder(parent_dir, folders):
     try:
         for folder in folders:
             os.makedirs(os.path.join(parent_dir, folder))
-            timestamp(f'[green][+] Folder {folder} created successfully![/green]', 'alert')
+            timestamp(f'[green]Folder {folder} created successfully![/green]', 'alert')
     except Exception as e:
         timestamp(f'[red][-] Error creating folder {folder}![/red]', 'error')
         timestamp(e, 'error')

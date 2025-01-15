@@ -44,7 +44,7 @@ def create_file(parent_dir, files):
         for file in files:
             with open(os.path.join(parent_dir, file), 'w') as f:
                 pass
-            timestamp(f'[green][+] File {file} created successfully![/green]', 'alert')
+            timestamp(f'[green]File {file} created successfully![/green]', 'alert')
     except Exception as e:
         timestamp(f'[red][-] Error creating file {file}![/red]', 'error')
         timestamp(e, 'error')
