@@ -11,7 +11,7 @@ content:
     - "README.md"
     - "requirements.txt"
     - "main.py"
-    - "License"
+    - "LICENSE"
     - "docs\\.gitkeep"
     - "tests\\.gitkeep"
     - "tests\\__init__.py"
